@@ -1,0 +1,8 @@
+node_modules
+__pycache__
+.env
+aenv
+all.ipynb
+onionVit.ipynb
+TomatooVit.ipynb
+TomatooVit(2).ipynb

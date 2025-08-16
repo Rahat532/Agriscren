@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AgriScan - Crop Health Analysis</title>
+  <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="/static/css/main.css" rel="stylesheet"/>
+  <style>
+    body { 
+      font-family: 'Poppins', sans-serif;
+      background-color: #f8fafc;
+      color: #1a202c;
+    }
+    .crop-section { transition: all 0.3s ease-in-out; }
+    .crop-section:hover { transform: translateY(-4px); }
+    .crop-section img { max-height: 300px; object-fit: cover; transition: all 0.3s ease; }
+    .form-input-upload { transition: all 0.2s ease; border: 2px dashed #e2e8f0; padding: 2rem; text-align: center; cursor: pointer; }
+    .form-input-upload:hover { border-color: #48bb78; background-color: #f0fff4; }
+    .analyze-button { transition: all 0.2s ease; }
+    .analyze-button:hover { transform: translateY(-2px); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); }
+    .disease-info { background: #ffffff; border-radius: 0.75rem; padding: 1.5rem; box-shadow: 0 1px 3px 0 rgba(0,0,0,0.1), 0 1px 2px 0 rgba(0,0,0,0.06); }
+    @media (max-width: 640px) {
+      .crop-section { padding: 1rem; }
+      .crop-section img { max-height: 200px; }
+    }
+
+    /* FLOATING Back-to-top button (added) */
+    #toTop{
+      position: fixed;
+      right: 20px;
+      bottom: 96px;        /* sits above the footer */
+      z-index: 60;         /* above content/footer */
+      display: none;       /* shown after scroll */
+      padding: .65rem .9rem;
+      border-radius: 9999px;
+      background: #16a34a; /* green-600 */
+      color: #fff;
+      border: none;
+      box-shadow: 0 6px 14px rgba(0,0,0,.15);
+      cursor: pointer;
+    }
+    #toTop:hover{ background:#166534; } /* green-800 */
+  </style>
+  <script defer src="/static/js/app.js"></script>
+</head>
+<body class="bg-gray-100 text-gray-800 transition-opacity opacity-0">
+  <!-- Navbar -->
+  <header class="bg-green-700 text-white py-4 px-6 md:flex md:items-center md:justify-between">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center space-x-2">
+        <img src="/static/img/logo.png" alt="Logo" class="w-10 h-10 rounded-full bg-white p-1" />
+        <span class="text-2xl font-bold">AgriScan</span>
+      </div>
+      <button class="md:hidden text-white text-2xl" id="nav-toggle">
+        <i class="fas fa-bars"></i>
+      </button>
+    </div>
+    <nav id="mobile-nav" class="hidden md:flex space-x-6 mt-4 md:mt-0">
+      <a href="#tomato" class="hover:text-green-300">🍅 Tomato</a>
+      <a href="#onion" class="hover:text-green-300">🧅 Onion</a>
+      <a href="#maize" class="hover:text-green-300">🌽 Maize</a>
+    </nav>
+  </header>
+
+  <!-- Model Accuracy -->
+  <div class="bg-green-100 border-l-4 border-green-600 p-4 mt-6 mx-4 rounded">
+    <p class="text-green-800 font-medium">
+      <i class="fas fa-check-circle mr-2"></i>
+      Powered by Deep Learning Model – <strong>98% accuracy</strong> on real-world crop disease detection.But it is not 100% accurate, so please consult with an expert before taking any action.
+    </p>
+  </div>
+
+  <!-- Wait banner + error surface -->
+  <div id="wait-banner" class="bg-green-100 border-l-4 border-green-600 p-4 mt-6 mx-4 rounded hidden" aria-live="polite">
+    <p class="text-green-800 font-medium">
+      <i class="fas fa-spinner fa-spin mr-2"></i>
+      Analyzing your image… this can take a few seconds.
+    </p>
+  </div>
+  {% if error %}
+  <div class="bg-red-50 border-l-4 border-red-600 p-4 mt-4 mx-4 rounded text-red-800">
+    <i class="fas fa-exclamation-triangle mr-2"></i>{{ error }}
+  </div>
+  {% endif %}
+
+  <!-- Crop Sections -->
+  <div class="max-w-6xl mx-auto px-4">
+    <!-- Tomato Section -->
+    <section id="tomato" class="crop-section bg-gradient-to-br from-red-50 to-pink-500 p-8 my-8 rounded-2xl shadow-lg transform transition-all hover:scale-[1.01]">
+      <h2 class="text-3xl font-bold mb-6 flex items-center text-red-700">
+        <span class="text-4xl mr-3">🍅</span> Tomato Disease Detection
+      </h2>
+
+      <div class="md:flex gap-8 items-start">
+        <div class="md:w-2/5 mb-6 md:mb-0">
+          <div class="relative group">
+            <img src="/static/img/tomato.jpeg" alt="Healthy tomato plant leaf" class="w-full rounded-xl border-4 border-red-200 shadow-lg transition-transform group-hover:scale-105" />
+          </div>
+        </div>
+
+        <div class="md:w-3/5">
+          <div class="bg-white rounded-xl p-6 shadow-md">
+            <h3 class="text-xl font-semibold mb-4 text-gray-800">Disease Information</h3>
+            <p class="text-gray-600 leading-relaxed mb-4">
+              Tomato crops are susceptible to fungal diseases such as <strong class="text-red-600">Early Blight</strong> and
+              <strong class="text-red-600">Late Blight</strong>. These can cause leaf spots, wilting, and fruit rot.
+            </p>
+
+            <div class="space-y-3 mb-6">
+              <div class="flex items-start space-x-2">
+                <svg class="w-5 h-5 text-red-500 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+                <span class="text-gray-700"><strong>Early Blight:</strong> Dark concentric spots on older leaves</span>
+              </div>
+              <div class="flex items-start space-x-2">
+                <svg class="w-5 h-5 text-red-500 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+                <span class="text-gray-700"><strong>Late Blight:</strong> Rapid yellowing and browning of leaves</span>
+              </div>
+            </div>
+
+            <!-- Tomato form -->
+            <form action="/predict" method="post" enctype="multipart/form-data" class="space-y-4 predict-form">
+              <input type="hidden" name="crop_type" value="tomato" />
+              <div class="relative">
+                <input type="file" name="file" accept="image/*" required class="w-full p-3 border-2 border-dashed border-red-200 rounded-lg cursor-pointer hover:border-red-400 transition-colors focus:outline-none focus:border-red-500" id="tomato-file-input" />
+              </div>
+              <button type="submit" class="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white px-6 py-3 rounded-lg font-medium shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5">
+                Analyze Tomato Plant
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Onion Section -->
+    <section id="onion" class="crop-section bg-gradient-to-br from-green-500 to-white p-8 my-8 rounded-2xl shadow-lg transform transition-all hover:scale-[1.01]">
+      <h2 class="text-3xl font-bold mb-6 flex items-center text-purple-700">
+        <span class="text-4xl mr-3">🧅</span> Onion Disease Detection
+      </h2>
+
+      <div class="md:flex gap-8 items-start">
+        <div class="md:w-2/5 mb-6 md:mb-0">
+          <div class="relative group">
+            <img src="/static/img/onions.jpeg" alt="Onion Plant" class="w-full rounded-xl border-4 border-purple-200 shadow-lg transition-transform group-hover:scale-105" />
+          </div>
+        </div>
+
+        <div class="md:w-3/5">
+          <div class="bg-white rounded-xl p-6 shadow-md">
+            <h3 class="text-xl font-semibold mb-4 text-gray-800">Disease Information</h3>
+            <p class="text-gray-600 leading-relaxed mb-4">
+              Onions often suffer from <strong class="text-purple-600">Purple Blotch</strong>, a fungal infection that leads to leaf decay and loss of productivity if not treated early.
+            </p>
+
+            <div class="space-y-3 mb-6">
+              <div class="flex items-start space-x-2">
+                <svg class="w-5 h-5 text-purple-500 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+                <span class="text-gray-700"><strong>Purple Blotch:</strong> Water-soaked lesions with purple-brown color</span>
+              </div>
+              <div class="flex items-start space-x-2">
+                <svg class="w-5 h-5 text-purple-500 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+                <span class="text-gray-700">Progressive drying of foliage in humid conditions</span>
+              </div>
+            </div>
+
+            <!-- Onion form -->
+            <form action="/predict" method="post" enctype="multipart/form-data" class="space-y-4 predict-form">
+              <input type="hidden" name="crop_type" value="onion" />
+              <div class="relative">
+                <input type="file" name="file" accept="image/*" required class="w-full p-3 border-2 border-dashed border-purple-200 rounded-lg cursor-pointer hover:border-purple-400 transition-colors focus:outline-none focus:border-purple-500" id="onion-file-input" />
+              </div>
+              <button type="submit" class="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white px-6 py-3 rounded-lg font-medium shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5">
+                Analyze Onion Plant
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Maize Section -->
+    <section id="maize" class="crop-section bg-gradient-to-br from-yellow-400 to-white p-8 my-8 rounded-2xl shadow-lg transform transition-all hover:scale-[1.01]">
+      <h2 class="text-3xl font-bold mb-6 flex items-center text-yellow-700">
+        <span class="text-4xl mr-3">🌽</span> Maize Disease Detection
+      </h2>
+
+      <div class="md:flex gap-8 items-start">
+        <div class="md:w-2/5 mb-6 md:mb-0">
+          <div class="relative group">
+            <img src="/static/img/maize.jpeg" alt="Maize Plant" class="w-full rounded-xl border-4 border-yellow-200 shadow-lg transition-transform group-hover:scale-105" />
+          </div>
+        </div>
+
+        <div class="md:w-3/5">
+          <div class="bg-white rounded-xl p-6 shadow-md">
+            <h3 class="text-xl font-semibold mb-4 text-gray-800">Disease Information</h3>
+            <p class="text-gray-600 leading-relaxed mb-4">
+              Maize crops can be affected by <strong class="text-yellow-600">Gray Leaf Spot</strong>, which significantly reduces photosynthesis and grain yield if not managed early.
+            </p>
+
+            <div class="space-y-3 mb-6">
+              <div class="flex items-start space-x-2">
+                <svg class="w-5 h-5 text-yellow-500 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+                <span class="text-gray-700"><strong>Gray Leaf Spot:</strong> Long, rectangular lesions between veins</span>
+              </div>
+              <div class="flex items-start space-x-2">
+                <svg class="w-5 h-5 text-yellow-500 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+                <span class="text-gray-700">Rapid spread in warm, moist conditions</span>
+              </div>
+            </div>
+
+            <!-- Maize form -->
+            <form action="/predict" method="post" enctype="multipart/form-data" class="space-y-4 predict-form">
+              <input type="hidden" name="crop_type" value="maize" />
+              <div class="relative">
+                <input type="file" name="file" accept="image/*" required class="w-full p-3 border-2 border-dashed border-yellow-200 rounded-lg cursor-pointer hover:border-yellow-400 transition-colors focus:outline-none focus:border-yellow-500" id="maize-file-input" />
+              </div>
+              <button type="submit" class="w-full bg-gradient-to-r from-yellow-600 to-yellow-700 hover:from-yellow-700 hover:to-yellow-800 text-white px-6 py-3 rounded-lg font-medium shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5">
+                Analyze Maize Plant
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- How it works -->
+  <section class="bg-white border-t mt-8 py-6 px-4">
+    <h2 class="text-xl font-semibold text-green-800 mb-2">How It Works</h2>
+    <p class="text-gray-600">
+      Upload an image of a crop leaf (Tomato, Onion, or Maize). Our deep learning model analyzes the image and identifies potential diseases. You'll get a prediction with suggested next steps within seconds.
+    </p>
+  </section>
+
+  <!-- About Section -->
+  <section id="about" class="bg-gray-400 py-12 px-4 border-t">
+    <div class="max-w-6xl mx-auto text-center">
+      <h2 class="text-3xl font-bold text-green-700 mb-4">About AgriScan</h2>
+      <p class="text-white text-lg mb-6">
+        AgriScan is a smart, AI-powered tool designed to help farmers detect crop diseases early through image analysis. 
+        By simply uploading a photo of a crop leaf, farmers receive instant feedback on the crop’s condition—helping them take action before it's too late.
+      </p>
+      <div class="grid md:grid-cols-3 gap-8 text-left mt-8">
+        <div class="bg-green-50 p-6 rounded-xl shadow-md hover:shadow-lg transition-all">
+          <h3 class="text-xl font-semibold text-green-800 mb-2"><i class="fas fa-seedling mr-2"></i>Easy Disease Detection</h3>
+          <p class="text-gray-600">Upload a leaf image to instantly detect common diseases in tomato, onion, and maize crops with high accuracy.</p>
+        </div>
+        <div class="bg-green-50 p-6 rounded-xl shadow-md hover:shadow-lg transition-all">
+          <h3 class="text-xl font-semibold text-green-800 mb-2"><i class="fas fa-lightbulb mr-2"></i>Smart Recommendations</h3>
+          <p class="text-gray-600">Based on the prediction, AgriScan provides actionable farming advice—like when to apply treatment or rotate crops.</p>
+        </div>
+        <div class="bg-green-50 p-6 rounded-xl shadow-md hover:shadow-lg transition-all">
+          <h3 class="text-xl font-semibold text-green-800 mb-2"><i class="fas fa-globe-asia mr-2"></i>Empowering Farmers</h3>
+          <p class="text-gray-600">We aim to make technology accessible to all farmers—reducing crop loss and improving productivity in rural communities.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="bg-black text-white mt-16" role="contentinfo">
+    <div class="max-w-6xl mx-auto px-6 py-12">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div>
+          <div class="flex items-center gap-2 mb-4">
+            <div class="w-8 h-8 bg-green-200 rounded-full flex items-center justify-center">
+              <i class="fas fa-leaf text-xl text-green-800" aria-hidden="true"></i>
+            </div>
+            <span class="text-xl font-bold text-green-300">AgriScan</span>
+          </div>
+          <p class="text-gray-400 text-sm">Advanced crop disease detection powered by artificial intelligence.</p>
+        </div>
+
+        <nav aria-label="Footer – Quick links">
+          <h3 class="text-sm font-semibold text-gray-300 uppercase mb-4">Quick Links</h3>
+          <ul class="space-y-2">
+            <li><a href="/" class="text-gray-400 hover:text-green-400 hover:underline text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-green-400 rounded">Home</a></li>
+            <li><a href="/about" class="text-gray-400 hover:text-green-400 hover:underline text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-green-400 rounded">About</a></li>
+            <li><a href="/documentation" class="text-gray-400 hover:text-green-400 hover:underline text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-green-400 rounded">Documentation</a></li>
+          </ul>
+        </nav>
+
+        <nav aria-label="Footer – Supported crops">
+          <h3 class="text-sm font-semibold text-gray-300 uppercase mb-4">Supported Crops</h3>
+          <ul class="space-y-2">
+            <li><a href="/#tomato" class="text-gray-400 hover:text-green-400 hover:underline text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-green-400 rounded">Tomato</a></li>
+            <li><a href="/#onion" class="text-gray-400 hover:text-green-400 hover:underline text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-green-400 rounded">Onion</a></li>
+            <li><a href="/#maize" class="text-gray-400 hover:text-green-400 hover:underline text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-green-400 rounded">Maize</a></li>
+          </ul>
+        </nav>
+
+        <div>
+          <h3 class="text-sm font-semibold text-gray-300 uppercase mb-4">Contact</h3>
+          <ul class="space-y-2">
+            <li class="flex items-center text-gray-400 text-sm">
+              <i class="fas fa-envelope w-5 text-green-400 mr-2" aria-hidden="true"></i>
+              <a href="mailto:support@agriscan.com" class="hover:text-green-400 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-green-400 rounded">support@agriscan.com</a>
+            </li>
+            <li class="flex items-center text-gray-400 text-sm">
+              <i class="fas fa-phone w-5 text-green-400 mr-2" aria-hidden="true"></i>
+              <a href="tel:+15551234567" class="hover:text-green-400 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-green-400 rounded">+1 (555) 123-4567</a>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="border-t border-gray-800 mt-10 pt-6 flex flex-col sm:flex-row justify-between items-center gap-4">
+        <p class="text-gray-500 text-sm">&copy; 2025 AgriScan. All rights reserved.</p>
+        <div class="flex items-center gap-4">
+          <a href="#" aria-label="Twitter" class="text-gray-400 hover:text-green-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-400 rounded"><i class="fab fa-twitter" aria-hidden="true"></i><span class="sr-only">Twitter</span></a>
+          <a href="#" aria-label="Facebook" class="text-gray-400 hover:text-green-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-400 rounded"><i class="fab fa-facebook" aria-hidden="true"></i><span class="sr-only">Facebook</span></a>
+          <a href="#" aria-label="Instagram" class="text-gray-400 hover:text-green-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-400 rounded"><i class="fab fa-instagram" aria-hidden="true"></i><span class="sr-only">Instagram</span></a>
+          <a href="#" aria-label="LinkedIn" class="text-gray-400 hover:text-green-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-400 rounded"><i class="fab fa-linkedin" aria-hidden="true"></i><span class="sr-only">LinkedIn</span></a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Floating Back-to-top button (added) -->
+  <button id="toTop" aria-label="Back to top" title="Back to top">
+    <i class="fa-solid fa-arrow-up"></i>
+  </button>
+
+  <!-- Mobile Nav Toggle Script -->
+  <script>
+    document.getElementById('nav-toggle').addEventListener('click', () => {
+      const nav = document.getElementById('mobile-nav');
+      nav.classList.toggle('hidden');
+    });
+
+    // Back-to-top show/hide + smooth scroll (added)
+    (function(){
+      const toTop = document.getElementById('toTop');
+      const toggleTop = () => {
+        if (window.scrollY > 240) toTop.style.display = 'inline-flex';
+        else toTop.style.display = 'none';
+      };
+      window.addEventListener('scroll', toggleTop, { passive: true });
+      toggleTop();
+      toTop.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+    })();
+  </script>
+
+  <!-- keep your existing shared helpers -->
+  <script defer src="/static/js/app.js"></script>
+</body>
+</html>

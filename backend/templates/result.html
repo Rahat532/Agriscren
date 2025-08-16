@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Analysis Result - AgriScan</title>
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="/static/css/main.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+  <!-- Chart.js for the Top-3 bar chart -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Shared UI helpers (nav toggle, etc.) -->
+  <script defer src="/static/js/app.js"></script>
+
+  <style>
+    :root{
+      --agri-green:#16a34a;        /* Tailwind green-600 */
+      --agri-green-dark:#166534;   /* green-800 */
+      --agri-green-100:#dcfce7;    /* green-100 */
+      --ring:0 0 0 3px rgba(34,197,94,.35);
+    }
+    .card{background:#fff;border-radius:14px;border:1px solid #e5e7eb;box-shadow:0 6px 14px rgba(0,0,0,.04)}
+    .badge{display:inline-flex;align-items:center;gap:.5rem;padding:.25rem .6rem;border-radius:9999px;font-weight:600;background:var(--agri-green-100);color:var(--agri-green-dark)}
+    .btn-primary{background:var(--agri-green);color:#fff}
+    .btn-primary:hover{background:var(--agri-green-dark);transform:translateY(-1px)}
+    .btn{transition:all .2s ease;border-radius:.75rem}
+    .focus-ring:focus{outline:none;box-shadow:var(--ring)}
+
+    /* Floating Back-to-top button (above footer) */
+    #toTop{
+      position: fixed;
+      right: 20px;
+      bottom: 96px;           /* keeps it above footer area */
+      z-index: 60;            /* above content/footer */
+      display: none;
+      padding: .65rem .9rem;
+      border-radius: 9999px;
+      background: var(--agri-green);
+      color: #fff;
+      border: none;
+      box-shadow: 0 6px 14px rgba(0,0,0,.15);
+      cursor: pointer;
+    }
+    #toTop:hover{ background: var(--agri-green-dark); }
+  </style>
+</head>
+
+<body class="min-h-screen flex flex-col bg-gray-50 text-gray-800 transition-opacity duration-200 opacity-0">
+
+  <!-- Header -->
+  <header class="bg-green-700 text-white py-4 px-6 md:flex md:items-center md:justify-between">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center space-x-2">
+        <img src="/static/img/logo.png" alt="Logo" class="w-10 h-10 rounded-full bg-white p-1" />
+        <span class="text-2xl font-bold">AgriScan</span>
+      </div>
+      <button class="md:hidden text-white text-2xl" id="nav-toggle">
+        <i class="fas fa-bars"></i>
+      </button>
+    </div>
+    <nav id="mobile-nav" class="hidden md:flex space-x-6 mt-4 md:mt-0">
+      <a href="#tomato" class="hover:text-green-300">🍅 Tomato</a>
+      <a href="#onion" class="hover:text-green-300">🧅 Onion</a>
+      <a href="#maize" class="hover:text-green-300">🌽 Maize</a>
+    </nav>
+  </header>
+
+<main class="flex-1 max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+
+  <!-- Summary -->
+  <section class="card p-4 sm:p-6">
+    <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="text-2xl font-bold tracking-tight">
+            Result for <span class="text-green-700 break-words">{{ crop|capitalize }}</span>
+          </h1>
+          {% if not is_ood %}
+            <span class="badge" aria-live="polite">
+              <i class="fa-solid fa-seedling" aria-hidden="true"></i>
+              {{ (confidence * 100) | round(1) }}%
+            </span>
+          {% endif %}
+        </div>
+        <p class="text-gray-600 mt-1">
+          {% if is_ood %}
+            The uploaded image seems <strong>out of domain</strong> for {{ crop }}.
+          {% else %}
+            Predicted class: <strong class="text-gray-900 break-words">{{ prediction }}</strong>
+          {% endif %}
+        </p>
+      </div>
+      <div class="flex items-center gap-3">
+        <a href="/" class="btn btn-primary inline-flex items-center gap-2 px-4 py-2 focus-ring">
+          <i class="fas fa-arrow-left" aria-hidden="true"></i> New Analysis
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Combined image + result card -->
+  <section class="card p-0 mt-6 sm:mt-8 overflow-hidden">
+    <!-- Better breakpoints for phones/tablets + overflow prevention -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
+
+      <!-- LEFT: Uploaded image -->
+      <div class="sm:col-span-1 lg:col-span-2 bg-gray-100 p-4 sm:p-6 flex items-center justify-center min-w-0">
+        <figure class="w-full">
+          <!-- Plugin-free 4:3 aspect box -->
+          <div class="relative w-full pt-[75%] overflow-hidden rounded-xl shadow-inner">
+            <img
+              src="/uploads/{{ filename or input_image }}"
+              alt="Uploaded {{ crop }} leaf"
+              class="absolute inset-0 h-full w-full object-contain"
+              loading="lazy"
+            />
+          </div>
+          <figcaption class="text-sm text-gray-500 mt-2">
+            Uploaded sample for {{ crop }}
+          </figcaption>
+        </figure>
+      </div>
+
+      <!-- RIGHT: Analysis summary -->
+      <div class="sm:col-span-1 lg:col-span-3 p-4 sm:p-6 min-w-0">
+        <div class="flex items-center justify-between gap-4 mb-3">
+          <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+            <i class="fa-solid fa-chart-column text-green-600"></i>
+            Analysis Result
+          </h2>
+          <a href="/" class="inline-flex items-center gap-2 text-green-700 hover:text-green-900 font-medium focus:outline-none focus:ring-2 focus:ring-green-300 rounded-lg px-2 py-1">
+            <i class="fa-solid fa-arrow-left"></i> New Analysis
+          </a>
+        </div>
+
+        {% if is_ood %}
+          <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+            <p class="text-yellow-900">
+              This image does not look like a {{ crop }} leaf our model was trained on.
+              Please upload a clear photo of a <strong>Tomato</strong>, <strong>Onion</strong>, or <strong>Maize</strong> leaf.
+            </p>
+          </div>
+        {% else %}
+          <div class="space-y-5">
+            <!-- Crop -->
+            <div>
+              <p class="text-sm text-gray-600">Crop</p>
+              <p class="text-lg font-medium text-gray-900 break-words">{{ crop }}</p>
+            </div>
+
+            <!-- Condition -->
+            <div>
+              <p class="text-sm text-gray-600">Condition</p>
+              <p class="text-xl font-semibold break-words
+                {% if prediction == 'Healthy_leaf' or prediction == 'healthy_fruit' or prediction == 'TomL_healthy_leaf' %}
+                  text-green-600
+                {% else %}
+                  text-red-600
+                {% endif %}">
+                {{ prediction }}
+              </p>
+            </div>
+
+            <!-- Confidence bar -->
+            <div>
+              <p class="text-sm text-gray-600">Confidence</p>
+              <div class="flex items-center">
+                <div class="w-full bg-gray-200 rounded-full h-2.5" aria-hidden="true">
+                  <div class="bg-green-600 h-2.5 rounded-full" style="width: {{ (confidence * 100) | round(1) }}%"></div>
+                </div>
+                <span class="ml-3 text-gray-700 font-medium" aria-live="polite">
+                  {{ (confidence * 100) | round(1) }}%
+                </span>
+              </div>
+            </div>
+
+            <!-- Top-3 list -->
+            {% if top3 %}
+            <div>
+              <p class="text-sm text-gray-600 mb-1">Top-3</p>
+              <ul class="text-sm text-gray-700 space-y-1">
+                {% for item in top3 %}
+                  <li class="flex items-center justify-between border rounded-lg px-3 py-2">
+                    <span class="font-medium break-words">{{ item.class }}</span>
+                    <span class="text-gray-600">{{ (item.confidence * 100) | round(1) }}%</span>
+                  </li>
+                {% endfor %}
+              </ul>
+            </div>
+            {% endif %}
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </section>
+
+  <!-- Confidence breakdown chart -->
+  {% if not is_ood and top3 %}
+  <section class="card p-4 sm:p-6 mt-6 sm:mt-8">
+    <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
+      <i class="fa-solid fa-signal text-green-600"></i>
+      Confidence breakdown
+    </h2>
+    <div class="h-56 sm:h-64">
+      <canvas id="top3Chart" aria-label="Top 3 classes bar chart" role="img"></canvas>
+    </div>
+  </section>
+  {% endif %}
+
+  <!-- Recommendations (based on result) -->
+  {% if not is_ood %}
+  <section class="card mt-6 sm:mt-8 overflow-hidden">
+    <!-- header -->
+    <div class="bg-green-50 border-b border-green-100 px-4 sm:px-6 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <i class="fa-solid fa-list-check text-green-600"></i>
+        <h2 class="text-lg font-semibold"> Recommendations</h2>
+        <span class="text-gray-500 text-sm">for {{ prediction }}</span>
+      </div>
+      {% set conf_pct = (confidence * 100) | round(1) %}
+      {% if conf_pct >= 85 %}
+        {% set conf_label = 'High confidence' %}
+        {% set conf_class = 'bg-green-100 text-green-800' %}
+      {% elif conf_pct >= 60 %}
+        {% set conf_label = 'Medium confidence' %}
+        {% set conf_class = 'bg-amber-100 text-amber-800' %}
+      {% else %}
+        {% set conf_label = 'Low confidence' %}
+        {% set conf_class = 'bg-gray-100 text-gray-700' %}
+      {% endif %}
+      <div class="hidden md:flex items-center gap-2">
+        <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">{{ conf_pct }}%</span>
+        <span class="px-2.5 py-1 rounded-full text-xs font-semibold {{ conf_class }}">{{ conf_label }}</span>
+      </div>
+    </div>
+
+    <!-- body -->
+    <div class="p-4 sm:p-6">
+      <div id="rec-text" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Immediate actions -->
+        <div>
+          <h3 class="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+            <i class="fa-solid fa-bolt text-green-600"></i> Do this now
+          </h3>
+          <ul class="space-y-2">
+            {% if 'blight' in prediction|lower %}
+              <li class="flex gap-2"><i class="fa-regular fa-circle-check text-green-600 mt-1"></i><span>Remove and destroy heavily infected leaves; do <em>not</em> compost.</span></li>
+              <li class="flex gap-2"><i class="fa-regular fa-circle-check text-green-600 mt-1"></i><span>Water at the base in the morning; keep foliage dry.</span></li>
+              <li class="flex gap-2"><i class="fa-regular fa-circle-check text-green-600 mt-1"></i><span>Improve airflow: prune lower leaves; stake/trellis plants.</span></li>
+            {% elif 'rust' in prediction|lower %}
+              <li class="flex gap-2"><i class="fa-regular fa-circle-check text-green-600 mt-1"></i><span>Scout twice weekly and remove rust-pustule leaves early.</span></li>
+              <li class="flex gap-2"><i class="fa-regular fa-circle-check text-green-600 mt-1"></i><span>Avoid overhead irrigation; keep the canopy dry.</span></li>
+            {% elif 'healthy' in prediction|lower %}
+              <li class="flex gap-2"><i class="fa-regular fa-square-check text-green-600 mt-1"></i><span>Maintain balanced nutrition and consistent irrigation.</span></li>
+              <li class="flex gap-2"><i class="fa-regular fa-square-check text-green-600 mt-1"></i><span>Rotate crops annually and keep the area clean of debris.</span></li>
+            {% else %}
+              <li class="flex gap-2"><i class="fa-regular fa-square-check text-green-600 mt-1"></i><span>Mulch, rotate, and keep leaves dry whenever possible.</span></li>
+              <li class="flex gap-2"><i class="fa-regular fa-square-check text-green-600 mt-1"></i><span>Use certified seed and resistant varieties when available.</span></li>
+            {% endif %}
+          </ul>
+        </div>
+
+        <!-- Helpful notes -->
+        <div>
+          <h3 class="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+            <i class="fa-regular fa-lightbulb text-green-600"></i> Helpful notes
+          </h3>
+          <ul class="list-disc pl-5 space-y-2 text-gray-700">
+            <li>Keep leaves dry where possible to reduce foliar diseases.</li>
+            <li>Scout weekly; early action saves yield and money.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- actions -->
+      <div class="mt-6 flex flex-wrap items-center gap-3">
+        <button id="copy-rec" class="btn btn-primary px-4 py-2 focus-ring inline-flex items-center gap-2"><i class="fa-regular fa-copy"></i> Copy steps</button>
+        <button onclick="window.print()" class="btn px-4 py-2 border border-gray-300 hover:bg-gray-100 focus-ring inline-flex items-center gap-2"><i class="fa-solid fa-print"></i> Print</button>
+        <span id="copy-ok" class="text-green-700 text-sm hidden">Copied!</span>
+      </div>
+
+      <p class="text-xs text-gray-500 mt-4">Note: Always follow local agricultural guidance and product labels. Where crop protection is considered, consult your extension officer or agronomist.</p>
+    </div>
+  </section>
+  {% endif %}
+
+  <!-- Farmers’ Tips -->
+  <section class="card p-4 sm:p-6 mt-6 sm:mt-8">
+    <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
+      <i class="fa-solid fa-tractor text-green-600"></i>
+      Farmers’ Tips
+    </h2>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+      <!-- Crop-specific tips -->
+      <div>
+        <h3 class="font-medium text-gray-900 mb-2">{{ crop|capitalize }} best practices</h3>
+        <ul class="list-disc pl-5 space-y-2 text-gray-700">
+          {% if crop|lower == 'tomato' %}
+            <li>Stake/trellis for airflow; remove lower leaves touching soil.</li>
+            <li>Water at the base early; avoid wet foliage.</li>
+            <li>Mulch to reduce soil splash; rotate away from solanaceae.</li>
+          {% elif crop|lower == 'onion' %}
+            <li>Use wider spacing for airflow; keep beds weed-free.</li>
+            <li>Avoid overhead irrigation near maturity; cure bulbs well.</li>
+            <li>Rotate away from Alliums for 3 years; sanitize tools.</li>
+          {% elif crop|lower == 'maize' %}
+            <li>Plant on time at recommended spacing and depth.</li>
+            <li>Split nitrogen (planting + V6) for better uptake.</li>
+            <li>Scout early for fall armyworm; handpick or use traps.</li>
+          {% else %}
+            <li>Maintain spacing and airflow; remove residues after harvest.</li>
+            <li>Irrigate deeply but less often; avoid wetting leaves.</li>
+            <li>Rotate crops yearly; use certified seed when possible.</li>
+          {% endif %}
+        </ul>
+      </div>
+
+      <!-- Disease-aware tips (based on prediction) -->
+      <div>
+        <h3 class="font-medium text-gray-900 mb-2">Condition-aware tips</h3>
+        <ul class="list-disc pl-5 space-y-2 text-gray-700">
+          {% if 'blight' in prediction|lower %}
+            <li>Remove infected leaves; do not compost. Disinfect tools between plants.</li>
+            <li>Improve airflow and avoid evening irrigation.</li>
+          {% elif 'rust' in prediction|lower %}
+            <li>Scout twice weekly; remove leaves with fresh pustules promptly.</li>
+            <li>Keep canopy dry; avoid overcrowding to reduce humidity.</li>
+          {% elif 'healthy' in prediction|lower %}
+            <li>Maintain balanced fertilization and consistent irrigation.</li>
+            <li>Continue weekly scouting to catch issues early.</li>
+          {% else %}
+            <li>Mulch soil, rotate crops, and keep leaves dry whenever possible.</li>
+            <li>Choose resistant varieties and certified seed when available.</li>
+          {% endif %}
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- Image stats -->
+  <section class="card p-4 sm:p-6 mt-6 sm:mt-8">
+    <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
+      <i class="fa-solid fa-circle-info text-green-600"></i>
+      Image Details
+    </h2>
+    {% if stats %}
+      <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
+        {% for k, v in stats.items() %}
+          <div class="flex justify-between border-b pb-2">
+            <dt class="text-gray-600 capitalize">{{ k|replace('_',' ') }}</dt>
+            <dd class="font-medium text-gray-900 break-words">{{ v }}</dd>
+          </div>
+        {% endfor %}
+      </dl>
+    {% else %}
+      <p class="text-gray-500">No additional details available.</p>
+    {% endif %}
+  </section>
+
+  <!-- Explainability (LIME, Occlusion, IG) -->
+  {% if not is_ood %}
+  <section class="card p-4 sm:p-6 mt-6 sm:mt-8">
+    <h2 class="text-lg font-semibold mb-4 flex items-center gap-2 ml-2">
+      <i class="fa-regular fa-eye text-green-600"></i>
+      Explainability
+    </h2>
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+      {% if lime_image %}
+      <figure>
+        <img src="/uploads/{{ lime_image }}" alt="LIME explanation" class="w-full rounded-xl border" loading="lazy" />
+        <figcaption class="text-sm text-gray-500 mt-2">LIME superpixel explanation</figcaption>
+      </figure>
+      {% endif %}
+      {% if occlusion_image %}
+      <figure>
+        <img src="/uploads/{{ occlusion_image }}" alt="Occlusion heatmap" class="w-full rounded-xl border" loading="lazy" />
+        <figcaption class="text-sm text-gray-500 mt-2">Occlusion sensitivity</figcaption>
+      </figure>
+      {% endif %}
+      {% if ig_image %}
+      <figure>
+        <img src="/uploads/{{ ig_image }}" alt="Integrated Gradients heatmap" class="w-full rounded-xl border" loading="lazy" />
+        <figcaption class="text-sm text-gray-500 mt-2">Integrated Gradients</figcaption>
+      </figure>
+      {% endif %}
+      {% if not lime_image and not occlusion_image and not ig_image %}
+        <p class="text-gray-500">No explanation images available for this result.</p>
+      {% endif %}
+    </div>
+  </section>
+  {% endif %}
+
+</main>
+
+  <!-- Footer -->
+  <footer class="bg-black text-white mt-16" role="contentinfo">
+    <div class="max-w-6xl mx-auto px-6 py-12">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div>
+          <div class="flex items-center gap-2 mb-4">
+            <div class="w-8 h-8 bg-green-200 rounded-full flex items-center justify-center">
+              <i class="fas fa-leaf text-xl text-green-800" aria-hidden="true"></i>
+            </div>
+            <span class="text-xl font-bold text-green-300">AgriScan</span>
+          </div>
+          <p class="text-gray-400 text-sm">Advanced crop disease detection powered by artificial intelligence.</p>
+        </div>
+
+        <nav aria-label="Footer – Quick links">
+          <h3 class="text-sm font-semibold text-gray-300 uppercase mb-4">Quick Links</h3>
+          <ul class="space-y-2">
+            <li><a href="/" class="text-gray-400 hover:text-green-400 hover:underline text-sm focus-ring rounded">Home</a></li>
+            <li><a href="/about" class="text-gray-400 hover:text-green-400 hover:underline text-sm focus-ring rounded">About</a></li>
+            <li><a href="/documentation" class="text-gray-400 hover:text-green-400 hover:underline text-sm focus-ring rounded">Documentation</a></li>
+          </ul>
+        </nav>
+
+        <nav aria-label="Footer – Supported crops">
+          <h3 class="text-sm font-semibold text-gray-300 uppercase mb-4">Supported Crops</h3>
+          <ul class="space-y-2">
+            <li><a href="/#tomato" class="text-gray-400 hover:text-green-400 hover:underline text-sm focus-ring rounded">Tomato</a></li>
+            <li><a href="/#onion" class="text-gray-400 hover:text-green-400 hover:underline text-sm focus-ring rounded">Onion</a></li>
+            <li><a href="/#maize" class="text-gray-400 hover:text-green-400 hover:underline text-sm focus-ring rounded">Maize</a></li>
+          </ul>
+        </nav>
+
+        <div>
+          <h3 class="text-sm font-semibold text-gray-300 uppercase mb-4">Contact</h3>
+          <ul class="space-y-2">
+            <li class="flex items-center text-gray-400 text-sm">
+              <i class="fas fa-envelope w-5 text-green-400 mr-2" aria-hidden="true"></i>
+              <a href="mailto:support@agriscan.com" class="hover:text-green-400 hover:underline focus-ring rounded">support@agriscan.com</a>
+            </li>
+            <li class="flex items-center text-gray-400 text-sm">
+              <i class="fas fa-phone w-5 text-green-400 mr-2" aria-hidden="true"></i>
+              <a href="tel:+15551234567" class="hover:text-green-400 hover:underline focus-ring rounded">+1 (555) 123-4567</a>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="border-top border-gray-800 mt-10 pt-6 flex flex-col sm:flex-row justify-between items-center gap-4">
+        <p class="text-gray-500 text-sm">&copy; 2025 AgriScan. All rights reserved.</p>
+        <div class="flex items-center gap-4">
+          <a href="#" aria-label="Twitter" class="text-gray-400 hover:text-green-400 focus-ring rounded"><i class="fab fa-twitter" aria-hidden="true"></i><span class="sr-only">Twitter</span></a>
+          <a href="#" aria-label="Facebook" class="text-gray-400 hover:text-green-400 focus-ring rounded"><i class="fab fa-facebook" aria-hidden="true"></i><span class="sr-only">Facebook</span></a>
+          <a href="#" aria-label="Instagram" class="text-gray-400 hover:text-green-400 focus-ring rounded"><i class="fab fa-instagram" aria-hidden="true"></i><span class="sr-only">Instagram</span></a>
+          <a href="#" aria-label="LinkedIn" class="text-gray-400 hover:text-green-400 focus-ring rounded"><i class="fab fa-linkedin" aria-hidden="true"></i><span class="sr-only">LinkedIn</span></a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Floating Back-to-top button -->
+  <button id="toTop" aria-label="Back to top" title="Back to top">
+    <i class="fa-solid fa-arrow-up"></i>
+  </button>
+
+  <!-- Page-specific chart init -->
+  {% if not is_ood and top3 %}
+  <script>
+    (function () {
+      const labels = [{% for item in top3 %}'{{ item.class }}'{% if not loop.last %}, {% endif %}{% endfor %}];
+      const values = [{% for item in top3 %}{{ (item.confidence * 100) | round(1) }}{% if not loop.last %}, {% endif %}{% endfor %}];
+      const el = document.getElementById('top3Chart');
+      if (!el) return; // safety
+      const ctx = el.getContext('2d');
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Confidence (%)',
+            data: values,
+            borderWidth: 2,
+            borderColor: '#16a34a',
+            backgroundColor: 'rgba(22, 163, 74, 0.15)',
+            hoverBackgroundColor: 'rgba(22, 163, 74, 0.25)',
+            borderRadius: 6,
+            barThickness: 28
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: {
+              beginAtZero: true,
+              suggestedMax: 100,
+              ticks: { callback: (v) => v + '%' },
+              grid: { color: 'rgba(0,0,0,.06)' }
+            },
+            x: { grid: { display: false } }
+          }
+        }
+      });
+    })();
+  </script>
+  {% endif %}
+
+  <!-- Copy button helper + Back-to-top logic -->
+  <script>
+    (function(){
+      const btn = document.getElementById('copy-rec');
+      const ok  = document.getElementById('copy-ok');
+      const box = document.getElementById('rec-text');
+      if (btn && box) {
+        btn.addEventListener('click', async () => {
+          try {
+            const text = box.innerText.trim();
+            await navigator.clipboard.writeText(text);
+            if (ok){ ok.classList.remove('hidden'); setTimeout(()=>ok.classList.add('hidden'), 1500); }
+          } catch(e){ console.warn('Copy failed', e); }
+        });
+      }
+
+      // Back-to-top show/hide + smooth scroll
+      const toTop = document.getElementById('toTop');
+      const toggleTop = () => {
+        if (window.scrollY > 240) toTop.style.display = 'inline-flex';
+        else toTop.style.display = 'none';
+      };
+      window.addEventListener('scroll', toggleTop, { passive: true });
+      toggleTop();
+      toTop.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+    })();
+  </script>
+</body>
+</html>
+<!-- End of result.html template -->

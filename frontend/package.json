@@ -1,0 +1,13 @@
+{
+  "name": "agri-app-frontend",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "tailwindcss -i ./src/input.css -o ../backend/static/css/main.css --minify",
+    "watch": "tailwindcss -i ./src/input.css -o ../backend/static/css/main.css --watch"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.17"
+  }
+}
