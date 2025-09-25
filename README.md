@@ -211,7 +211,15 @@ python -c "from app.ml_model import load_crop_models; models = load_crop_models(
 ```
 
 ## 🎨 UI Features
-
+![alt text](image.png)
+![alt text](image-1.png)
+![alt text](image-2.png)
+![alt text](image-3.png)
+![alt text](image-4.png)
+![alt text](image-5.png)
+![alt text](image-6.png)
+![alt text](image-7.png)
+![alt text](image-8.png)
 ### Responsive Design
 - Mobile-first approach with TailwindCSS
 - Adaptive layouts for different screen sizes
@@ -324,12 +332,39 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - TensorFlow and Keras communities
 - Agricultural research datasets and domain experts
 
-## 📞 Support
+## � Deployment
+
+For detailed deployment instructions, see [DEPLOYMENT.md](DEPLOYMENT.md).
+
+### Quick Deployment Options:
+
+#### Docker (Recommended)
+```bash
+docker-compose up --build -d
+```
+
+#### Local Production
+```bash
+# Linux/macOS
+./start-prod.sh
+
+# Windows
+start-prod.bat
+```
+
+#### Cloud Platforms
+- **Heroku**: Ready-to-deploy with Procfile
+- **AWS EC2**: Docker-based deployment
+- **Google Cloud Run**: Container deployment
+- **DigitalOcean**: App Platform ready
+
+## �📞 Support
 
 For support, questions, or contributions:
 - **GitHub Issues**: [Create an issue](https://github.com/Rahat532/Agriscren/issues)
-- **Email**: [Your contact email]
+- **Email**: [abdullahalrahat4261@dmail.com]
 - **Documentation**: Check this README and inline code comments
+- **Deployment**: See [DEPLOYMENT.md](DEPLOYMENT.md) for deployment help
 
 ---
 
