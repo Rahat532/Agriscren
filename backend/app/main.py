@@ -36,6 +36,15 @@ templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 # Load all crop models once
 MODELS = modelmod.load_crop_models()
 
+@app.get("/favicon.ico")
+async def favicon():
+    from fastapi.responses import FileResponse
+    favicon_path = STATIC_DIR / "favicon.ico"
+    if favicon_path.exists():
+        return FileResponse(str(favicon_path))
+    else:
+        raise HTTPException(404, "Favicon not found")
+
 @app.get("/")
 async def home(request: Request):
     return templates.TemplateResponse("index.html", {
