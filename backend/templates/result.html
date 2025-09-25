@@ -46,27 +46,14 @@
     }
     #toTop:hover{ background: var(--agri-green-dark); }
   </style>
+  
+<script defer src="/static/js/header.js"></script>
+
 </head>
 
 <body class="min-h-screen flex flex-col bg-gray-50 text-gray-800 transition-opacity duration-200 opacity-0">
 
-  <!-- Header -->
-  <header class="bg-green-700 text-white py-4 px-6 md:flex md:items-center md:justify-between">
-    <div class="flex items-center justify-between">
-      <div class="flex items-center space-x-2">
-        <img src="/static/img/logo.png" alt="Logo" class="w-10 h-10 rounded-full bg-white p-1" />
-        <span class="text-2xl font-bold">AgriScan</span>
-      </div>
-      <button class="md:hidden text-white text-2xl" id="nav-toggle">
-        <i class="fas fa-bars"></i>
-      </button>
-    </div>
-    <nav id="mobile-nav" class="hidden md:flex space-x-6 mt-4 md:mt-0">
-      <a href="#tomato" class="hover:text-green-300">🍅 Tomato</a>
-      <a href="#onion" class="hover:text-green-300">🧅 Onion</a>
-      <a href="#maize" class="hover:text-green-300">🌽 Maize</a>
-    </nav>
-  </header>
+<div id="site-header"></div>
 
 <main class="flex-1 max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
 
@@ -110,11 +97,11 @@
       <div class="sm:col-span-1 lg:col-span-2 bg-gray-100 p-4 sm:p-6 flex items-center justify-center min-w-0">
         <figure class="w-full">
           <!-- Plugin-free 4:3 aspect box -->
-          <div class="relative w-full pt-[75%] overflow-hidden rounded-xl shadow-inner">
+          <div class="w-full rounded-xl shadow-inner">
             <img
               src="/uploads/{{ filename or input_image }}"
               alt="Uploaded {{ crop }} leaf"
-              class="absolute inset-0 h-full w-full object-contain"
+              class=" h-full w-full object-cover"
               loading="lazy"
             />
           </div>
@@ -280,7 +267,7 @@
         <button id="copy-rec" class="btn btn-primary px-4 py-2 focus-ring inline-flex items-center gap-2"><i class="fa-regular fa-copy"></i> Copy steps</button>
         <button onclick="window.print()" class="btn px-4 py-2 border border-gray-300 hover:bg-gray-100 focus-ring inline-flex items-center gap-2"><i class="fa-solid fa-print"></i> Print</button>
         <span id="copy-ok" class="text-green-700 text-sm hidden">Copied!</span>
-      </div>
+      </div> 
 
       <p class="text-xs text-gray-500 mt-4">Note: Always follow local agricultural guidance and product labels. Where crop protection is considered, consult your extension officer or agronomist.</p>
     </div>
@@ -437,7 +424,7 @@
             </li>
             <li class="flex items-center text-gray-400 text-sm">
               <i class="fas fa-phone w-5 text-green-400 mr-2" aria-hidden="true"></i>
-              <a href="tel:+15551234567" class="hover:text-green-400 hover:underline focus-ring rounded">+1 (555) 123-4567</a>
+              <a href="tel:+15551234567" class="hover:text-green-400 hover:underline focus-ring rounded">01849575427</a>
             </li>
           </ul>
         </div>

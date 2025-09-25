@@ -45,25 +45,11 @@
     #toTop:hover{ background:#166534; } /* green-800 */
   </style>
   <script defer src="/static/js/app.js"></script>
+  <script defer src="/static/js/header.js"></script>
 </head>
 <body class="bg-gray-100 text-gray-800 transition-opacity opacity-0">
   <!-- Navbar -->
-  <header class="bg-green-700 text-white py-4 px-6 md:flex md:items-center md:justify-between">
-    <div class="flex items-center justify-between">
-      <div class="flex items-center space-x-2">
-        <img src="/static/img/logo.png" alt="Logo" class="w-10 h-10 rounded-full bg-white p-1" />
-        <span class="text-2xl font-bold">AgriScan</span>
-      </div>
-      <button class="md:hidden text-white text-2xl" id="nav-toggle">
-        <i class="fas fa-bars"></i>
-      </button>
-    </div>
-    <nav id="mobile-nav" class="hidden md:flex space-x-6 mt-4 md:mt-0">
-      <a href="#tomato" class="hover:text-green-300">🍅 Tomato</a>
-      <a href="#onion" class="hover:text-green-300">🧅 Onion</a>
-      <a href="#maize" class="hover:text-green-300">🌽 Maize</a>
-    </nav>
-  </header>
+<div id="site-header"></div>
 
   <!-- Model Accuracy -->
   <div class="bg-green-100 border-l-4 border-green-600 p-4 mt-6 mx-4 rounded">
@@ -314,7 +300,7 @@
             </li>
             <li class="flex items-center text-gray-400 text-sm">
               <i class="fas fa-phone w-5 text-green-400 mr-2" aria-hidden="true"></i>
-              <a href="tel:+15551234567" class="hover:text-green-400 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-green-400 rounded">+1 (555) 123-4567</a>
+              <a href="tel:+15551234567" class="hover:text-green-400 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-green-400 rounded">01849575427</a>
             </li>
           </ul>
         </div>
